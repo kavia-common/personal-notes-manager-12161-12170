@@ -1,101 +1,104 @@
-import Image from "next/image";
+"use client";
 
+import { useState } from "react";
+import NotesList from "@/components/NotesList";
+import NoteView from "@/components/NoteView";
+import TopBar from "@/components/TopBar";
+import NoteEditorModal from "@/components/NoteEditorModal";
+
+// Note type for notes app
+type Note = {
+  id: number;
+  title: string;
+  content: string;
+  updatedAt: Date;
+};
+type NoteInput = Omit<Note, "id" | "updatedAt"> & Partial<Pick<Note, "id">>;
+
+// Fake initial notes for prototyping/frontend (replace after backend integration)
+const initialNotes: Note[] = [
+  { id: 1, title: "Welcome to NotesApp", content: "Select or add a note.", updatedAt: new Date() },
+  { id: 2, title: "Try Edit & Delete", content: "You can edit or delete notes.", updatedAt: new Date() },
+];
+
+// PUBLIC_INTERFACE
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [notes, setNotes] = useState<Note[]>(initialNotes);
+  const [selectedId, setSelectedId] = useState<number | null>(notes[0]?.id || null);
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [editNote, setEditNote] = useState<NoteInput | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // PUBLIC_INTERFACE
+  function handleAdd() {
+    setEditNote(null);
+    setModalOpen(true);
+  }
+
+  // PUBLIC_INTERFACE
+  function handleSave(note: NoteInput) {
+    if (note.id) {
+      // Edit
+      setNotes(notes.map(n => n.id === note.id ? { ...n, ...note, updatedAt: new Date() } : n));
+      setSelectedId(note.id);
+    } else {
+      // Create
+      const id = Math.max(0, ...notes.map((n) => n.id)) + 1;
+      setNotes([{ id, title: note.title, content: note.content, updatedAt: new Date() }, ...notes]);
+      setSelectedId(id);
+    }
+    setModalOpen(false);
+  }
+
+  // PUBLIC_INTERFACE
+  function handleDelete(id: number) {
+    setNotes(notes.filter(n => n.id !== id));
+    if (selectedId === id) setSelectedId(notes[0]?.id ?? null);
+  }
+
+  // PUBLIC_INTERFACE
+  function handleEdit(note: Note) {
+    setEditNote({ id: note.id, title: note.title, content: note.content });
+    setModalOpen(true);
+  }
+
+  // PUBLIC_INTERFACE
+  function handleSelect(id: number) {
+    setSelectedId(id);
+  }
+
+  const selectedNote = notes.find(n => n.id === selectedId) ?? null;
+
+  return (
+    <div className="min-h-screen bg-white flex flex-col">
+      <TopBar onAdd={handleAdd} />
+      <div className="flex flex-1 overflow-hidden">
+        {/* Notes List Panel */}
+        <div className="w-full max-w-xs border-r border-gray-200 bg-[#f9fafb] h-full overflow-y-auto">
+          <NotesList
+            notes={notes}
+            onSelect={handleSelect}
+            selectedId={selectedId}
+            onDelete={handleDelete}
+            onEdit={handleEdit}
+          />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        {/* Main Area */}
+        <main className="flex-1 h-full overflow-y-auto">
+          {selectedNote ? (
+            <NoteView note={selectedNote} onEdit={handleEdit} onDelete={handleDelete} />
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-400">
+              No note selected.
+            </div>
+          )}
+        </main>
+      </div>
+      <NoteEditorModal
+        open={modalOpen}
+        initialNote={editNote}
+        onSave={handleSave}
+        onClose={() => setModalOpen(false)}
+      />
     </div>
   );
 }
